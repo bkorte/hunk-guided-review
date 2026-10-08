@@ -30,7 +30,7 @@ with a coding-agent CLI such as `claude -p`.
  ✓ 4. Limit Configuration                                  1/1
    5. Limiter Tests                                        0/1
 
- n next hunk · N next section · ctrl+x section done · x file
+ J next hunk · L next section · ctrl+x section done · x file
  done · ctrl+g regenerate
 ```
 
@@ -76,8 +76,8 @@ hunk diff --extension /path/to/hunk-guided-review
 | -------- | ------------------------------------ |
 | `ctrl+g` | Generate the guide (or show/regenerate it) |
 | `ctrl+t` | Toggle the guide pane                |
-| `n` / `p`| Next / previous hunk in guide order  |
-| `N` / `P`| Next / previous section              |
+| `J` / `K`| Next / previous hunk in guide order  |
+| `L` / `H`| Next / previous section              |
 | `ctrl+x` | Mark the current section reviewed    |
 | `x`      | Mark the current file reviewed       |
 

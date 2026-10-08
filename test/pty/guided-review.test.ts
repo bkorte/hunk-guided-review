@@ -133,21 +133,23 @@ describe("hunk-guided-review", () => {
       expect(text).toContain("Flip start and stop return values");
       expect(text).toContain("1. Core Logic");
       expect(text).toContain("1/3 hunks seen");
+      // A key the host already owns is refused, so the hint would drop it.
+      expect(text).toContain("J next hunk");
       // The guide pane stands in for the files pane while it is open.
       expect(text).not.toMatch(/\bM\s+app\.ts/);
 
       await harness.ensureKeyboardIsLive(session);
-      await session.press("P");
+      await session.press("H");
       text = await harness.waitForSnapshot(session, (snapshot) => snapshot.includes("▶ 1. Core Logic"), 10_000);
       expect(text).toContain("src/app.ts #1");
       expect(text).toContain("entry point");
       expect(text).toContain("Callers that compare");
 
-      await session.press("n");
+      await session.press("J");
       text = await harness.waitForSnapshot(session, (snapshot) => snapshot.includes("3/3 hunks seen"), 10_000);
       expect(text).toContain("· src/app.ts #1 #2");
 
-      await session.press("n");
+      await session.press("J");
       text = await harness.waitForSnapshot(session, (snapshot) => snapshot.includes("▶ 2. Docs Refresh"), 10_000);
 
       session.writeRaw("\x18"); // ctrl+x: mark section 2 reviewed, auto-advance wraps to section 1
@@ -157,7 +159,7 @@ describe("hunk-guided-review", () => {
 
       // Go back to section 2, click its button to unmark it, then click the file checkbox to mark
       // just the file; that auto-advances to the next open file, back in section 1.
-      await session.press("N");
+      await session.press("L");
       text = await harness.waitForSnapshot(session, (snapshot) => snapshot.includes("[✓ section reviewed]"), 10_000);
       let target = locate(text, "Documentation", "[✓ section reviewed]");
       await click(session, target.x + 1, target.y);

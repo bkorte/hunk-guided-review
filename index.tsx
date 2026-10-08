@@ -559,7 +559,7 @@ export default function registerGuidedReview(hunk: HunkExtensionAPI) {
     if (highlightsDirty) refreshHighlights(ctx);
   });
 
-  hunk.registerCommand({ id: "next-step", title: "Guide: next hunk", key: "n" }, (ctx) => {
+  hunk.registerCommand({ id: "next-step", title: "Guide: next hunk", key: "J" }, (ctx) => {
     const guide = requireGuide(ctx);
     if (!guide) return;
     const order = orderedLocations(guide);
@@ -572,7 +572,7 @@ export default function registerGuidedReview(hunk: HunkExtensionAPI) {
     jumpTo(ctx, next.path, next.hunk);
   });
 
-  hunk.registerCommand({ id: "prev-step", title: "Guide: previous hunk", key: "p" }, (ctx) => {
+  hunk.registerCommand({ id: "prev-step", title: "Guide: previous hunk", key: "K" }, (ctx) => {
     const guide = requireGuide(ctx);
     if (!guide) return;
     const order = orderedLocations(guide);
@@ -585,7 +585,7 @@ export default function registerGuidedReview(hunk: HunkExtensionAPI) {
     jumpTo(ctx, previous.path, previous.hunk);
   });
 
-  hunk.registerCommand({ id: "next-section", title: "Guide: next section", key: "N" }, (ctx) => {
+  hunk.registerCommand({ id: "next-section", title: "Guide: next section", key: "L" }, (ctx) => {
     const guide = requireGuide(ctx);
     if (!guide) return;
     const current = currentSectionIndex(getState());
@@ -599,7 +599,7 @@ export default function registerGuidedReview(hunk: HunkExtensionAPI) {
     jumpTo(ctx, first.path, first.hunk);
   });
 
-  hunk.registerCommand({ id: "prev-section", title: "Guide: previous section", key: "P" }, (ctx) => {
+  hunk.registerCommand({ id: "prev-section", title: "Guide: previous section", key: "H" }, (ctx) => {
     const guide = requireGuide(ctx);
     if (!guide) return;
     const current = currentSectionIndex(getState());
