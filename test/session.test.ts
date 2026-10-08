@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { normalizeGuide } from "../src/guide.ts";
 import { buildGuideComments, collectCommentIds, hunkBinary, NOTE_AUTHOR } from "../src/session.ts";
+import { resolveBinary } from "../src/spawn.ts";
 
 describe("buildGuideComments", () => {
   test("first location carries the section explanation, others only their note", () => {
@@ -50,6 +51,6 @@ describe("hunkBinary", () => {
   test("uses the running Hunk binary when that is what we are", () => {
     expect(hunkBinary("/Users/me/.hunk/bin/hunk")).toBe("/Users/me/.hunk/bin/hunk");
     expect(hunkBinary("C:\\hunk\\hunk.exe")).toBe("C:\\hunk\\hunk.exe");
-    expect(hunkBinary("/usr/local/bin/bun")).toBe("hunk");
+    expect(hunkBinary("/usr/local/bin/bun")).toBe(resolveBinary("hunk"));
   });
 });

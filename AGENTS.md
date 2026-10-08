@@ -15,7 +15,8 @@ how to change it safely.
 | `src/prompt.ts`        | Turns Hunk's file/hunk views into the prompt; owns `SYSTEM_PROMPT` and `PROMPT_VERSION`. |
 | `src/harness.ts`       | Runs claude, codex, or pi non-interactively and returns the structured answer.           |
 | `src/claude.ts`        | The `claude -p` runner and envelope parser (the default harness).                        |
-| `src/spawn.ts`         | Shared subprocess runner: prompt on stdin, timeout, cancel, output capture.              |
+| `src/spawn.ts`         | Shared subprocess runner: absolute-PATH lookup, prompt on stdin, timeout, cancel.        |
+| `src/settings.ts`      | Reads and validates `[extension.hunk-guided-review]`, which repo config can also set.    |
 | `src/cache.ts`         | Content-keyed guide cache; `changesetKey` must agree between Hunk and `git diff`.        |
 | `src/session.ts`       | Bridge to `hunk session comment …` for inline notes.                                     |
 | `src/store.ts`         | Module-level state, reviewed toggles with auto-advance, and the pane's React bridge.     |
@@ -52,10 +53,13 @@ The PTY test needs a checkout of `modem-dev/hunk` with `bun install` and
   `dim` tone 11, fractional pane width 12) are gated on `hunk.apiVersion` in
   `index.tsx`; keep that pattern when using anything newer than the types in
   `node_modules/hunkdiff`.
-- **Treat `hunk.config` as untrusted.** Repo config can set it. Model and
-  provider names are validated as plain tokens; binaries are always resolved
-  from PATH (or `process.execPath` for Hunk itself). Never take a path or a
-  shell command from config.
+- **Treat `hunk.config` as untrusted.** Repo config can set it, and
+  `readSettings` in `src/settings.ts` is the only place it is read. Model and
+  provider names must pass `isPlainToken` (never starting with `-`), run
+  limits are capped, and binaries are resolved with `resolveBinary` from
+  absolute PATH entries only (or `process.execPath` for Hunk itself), because
+  Hunk's cwd is the reviewed repo. Never take a path or a shell command from
+  config.
 - **Treat the reviewed repo as untrusted too.** Harnesses run with the repo as
   their cwd, and `claude -p` skips workspace trust, so a repo's own agent
   config would otherwise run its hooks or MCP servers. Keep `--setting-sources

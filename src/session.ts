@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import type { ReviewGuide } from "./guide.ts";
+import { resolveBinary } from "./spawn.ts";
 
 export const NOTE_AUTHOR = "Review guide";
 
@@ -16,11 +17,11 @@ export interface SessionCommentItem {
  * The `hunk` executable to drive the live session with.
  *
  * Inside a compiled Hunk binary `process.execPath` is Hunk itself, which is the
- * exact version running this review; otherwise fall back to PATH.
+ * exact version running this review; otherwise look it up on PATH.
  */
-export function hunkBinary(execPath: string = process.execPath): string {
+export function hunkBinary(execPath: string = process.execPath): string | undefined {
   const name = (execPath.split(/[\\/]/).pop() ?? "").toLowerCase();
-  return name === "hunk" || name === "hunk.exe" ? execPath : "hunk";
+  return name === "hunk" || name === "hunk.exe" ? execPath : resolveBinary("hunk");
 }
 
 function sectionRationale(section: ReviewGuide["sections"][number], note?: string): string {
@@ -76,7 +77,12 @@ interface RunResult {
 
 function runHunk(args: string[], cwd: string, stdin?: string): Promise<RunResult> {
   return new Promise((resolve, reject) => {
-    const child = spawn(hunkBinary(), args, { cwd, stdio: ["pipe", "pipe", "pipe"] });
+    const binary = hunkBinary();
+    if (!binary) {
+      reject(new Error("could not find `hunk` on PATH"));
+      return;
+    }
+    const child = spawn(binary, args, { cwd, stdio: ["pipe", "pipe", "pipe"] });
     const stdout: Buffer[] = [];
     const stderr: Buffer[] = [];
     child.stdout.on("data", (chunk: Buffer) => stdout.push(chunk));

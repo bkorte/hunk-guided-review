@@ -1,4 +1,6 @@
 import { spawn } from "node:child_process";
+import { accessSync, constants, statSync } from "node:fs";
+import { delimiter, isAbsolute, join } from "node:path";
 
 export interface ProcessResult {
   code: number | null;
@@ -12,6 +14,27 @@ export interface ProcessOptions {
   timeoutMs: number;
   signal?: AbortSignal;
   env?: NodeJS.ProcessEnv;
+}
+
+/**
+ * Find an executable in the absolute PATH entries only. Hunk runs from the
+ * reviewed repository, so a relative entry such as `.` or `bin` would let that
+ * repository supply its own `claude`.
+ */
+export function resolveBinary(name: string, pathEnv: string | undefined = process.env.PATH): string | undefined {
+  const names = process.platform === "win32" ? [name, `${name}.exe`] : [name];
+  for (const dir of (pathEnv ?? "").split(delimiter)) {
+    if (!isAbsolute(dir)) continue;
+    for (const candidate of names.map((entry) => join(dir, entry))) {
+      try {
+        accessSync(candidate, constants.X_OK);
+        if (statSync(candidate).isFile()) return candidate;
+      } catch {
+        // not here
+      }
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -30,9 +53,15 @@ export function runProcess(binary: string, args: string[], options: ProcessOptio
       if (error) reject(error);
       else resolve(result!);
     };
+    const env = options.env ?? process.env;
+    const resolved = resolveBinary(binary, env.PATH);
+    if (!resolved) {
+      reject(new Error(`could not find \`${binary}\` on PATH`));
+      return;
+    }
     let child: ReturnType<typeof spawn>;
     try {
-      child = spawn(binary, args, { cwd: options.cwd, env: options.env ?? process.env, stdio: ["pipe", "pipe", "pipe"] });
+      child = spawn(resolved, args, { cwd: options.cwd, env, stdio: ["pipe", "pipe", "pipe"] });
     } catch (error) {
       reject(error instanceof Error ? error : new Error(String(error)));
       return;

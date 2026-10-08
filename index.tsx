@@ -6,7 +6,6 @@ import type {
   ExtensionEventContext,
   ExtensionLineHighlight,
   ExtensionLineHighlightTone,
-  ExtensionPanePlacement,
   ExtensionPaneSize,
   HunkExtensionAPI,
 } from "hunkdiff/extension";
@@ -30,10 +29,11 @@ import {
   parseStoredGuide,
   type ReviewGuide,
 } from "./src/guide.ts";
-import { isHarness, runHarnessStructured, type Harness, type ToolAccess } from "./src/harness.ts";
+import { runHarnessStructured } from "./src/harness.ts";
 import { GuidePane } from "./src/pane.tsx";
 import { buildPromptFiles, inventoryOf, renderPrompt, splitPatchHunks, SYSTEM_PROMPT } from "./src/prompt.ts";
 import { applyGuideNotes, removeGuideNotes } from "./src/session.ts";
+import { readSettings } from "./src/settings.ts";
 import {
   beginGenerating,
   currentSectionIndex,
@@ -81,69 +81,7 @@ interface CliCommandHost {
 }
 const PANE_ID = "guide";
 const FILES_PANE_ID = "hunk:files";
-/** Wide enough for a full explanation sentence per row; Hunk shrinks it on narrower terminals. */
-const DEFAULT_PANE_WIDTH = 75;
 const DIM_HIGHLIGHTER_ID = "low-signal";
-
-/** User settings from `[extension.hunk-guided-review]`, validated because repo config can set them. */
-interface Settings {
-  autoGenerate: boolean;
-  inlineNotes: boolean;
-  dimLowSignal: boolean;
-  cache: boolean;
-  reorderFiles: boolean;
-  /** Close the built-in files pane while the guide pane is open, and reopen it when the guide closes. */
-  replaceFilesPane: boolean;
-  /** After marking a section or file reviewed, move to the next one still open. */
-  advanceOnSectionReviewed: boolean;
-  advanceOnFileReviewed: boolean;
-  harness: Harness;
-  model?: string;
-  provider?: string;
-  tools: ToolAccess;
-  maxTurns: number;
-  timeoutMs: number;
-  maxPromptChars: number;
-  placement: Extract<ExtensionPanePlacement, "left" | "right">;
-  paneWidth: number;
-}
-
-function readSettings(config: Record<string, unknown>): Settings {
-  const bool = (key: string, fallback: boolean) =>
-    typeof config[key] === "boolean" ? (config[key] as boolean) : fallback;
-  const num = (key: string, fallback: number, min: number, max: number) => {
-    const value = config[key];
-    return typeof value === "number" && Number.isFinite(value)
-      ? Math.min(max, Math.max(min, value))
-      : fallback;
-  };
-  const token = (key: string) =>
-    typeof config[key] === "string" && /^[A-Za-z0-9._:/~-]{1,120}$/.test(config[key] as string)
-      ? (config[key] as string)
-      : undefined;
-  const model = token("model");
-  const provider = token("provider");
-  const placement = config.pane === "right" ? "right" : "left";
-  return {
-    autoGenerate: bool("auto_generate", false),
-    inlineNotes: bool("inline_notes", true),
-    dimLowSignal: bool("dim_low_signal", true),
-    cache: bool("cache", true),
-    reorderFiles: bool("reorder_files", true),
-    replaceFilesPane: bool("replace_files_pane", true),
-    advanceOnSectionReviewed: bool("advance_on_section_reviewed", true),
-    advanceOnFileReviewed: bool("advance_on_file_reviewed", true),
-    harness: isHarness(config.harness) ? config.harness : "claude",
-    model,
-    provider,
-    tools: config.tools === "none" ? "none" : "read",
-    maxTurns: num("max_turns", 30, 2, 200),
-    timeoutMs: num("timeout_seconds", 600, 30, 3_600) * 1_000,
-    maxPromptChars: num("max_prompt_chars", 400_000, 20_000, 4_000_000),
-    placement,
-    paneWidth: num("pane_width", DEFAULT_PANE_WIDTH, 28, 400),
-  };
-}
 
 function toFileRefs(files: readonly ExtensionDiffFile[]): FileRef[] {
   return files.map((file) => ({ id: file.id, path: file.path, hunkCount: file.hunks?.length ?? 0 }));

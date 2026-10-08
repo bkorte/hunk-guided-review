@@ -138,10 +138,10 @@ reorder_files = true      # reorder the review stream to follow the guide's sect
 harness = "claude"        # "claude" (claude -p), "codex" (codex exec), or "pi" (pi -p)
 model = "sonnet"          # passed to the harness's --model; omit for its default
 provider = "openrouter"   # pi only: --provider
-tools = "read"            # "read": the agent may read repo files for context; "none": diff only
-max_turns = 30            # cap on agentic turns for one generation
-timeout_seconds = 600
-max_prompt_chars = 400000 # larger hunks are shortened to fit
+tools = "read"            # "read": the agent may read files for context; "none": diff only
+max_turns = 30            # cap on agentic turns for one generation (at most 100)
+timeout_seconds = 600     # at most 1800
+max_prompt_chars = 400000 # larger hunks are shortened to fit (at most 1000000)
 pane = "left"             # or "right"
 pane_width = 75           # preferred columns; Hunk shrinks it to fit narrower terminals
 replace_files_pane = true # close the files pane while the guide is open, reopen it when the guide closes
@@ -149,14 +149,26 @@ advance_on_section_reviewed = true # after marking a section reviewed, jump to t
 advance_on_file_reviewed = true    # after marking a file reviewed, jump to the next open file
 ```
 
-Repository `.hunk/config.toml` may set these too, so anything that reaches a
-command line is validated: `model` and `provider` must be plain tokens, and the
-harness binary (`claude`, `codex`, or `pi`) is always looked up on PATH, never
-taken from config. The harness runs inside the reviewed repository, so it is
-also told to ignore that repository's own agent config: `claude` loads only
-your user settings (no project hooks, settings, or `.mcp.json`), `pi` skips
-everything under `.pi/`, and `codex` applies project config only to projects
-you have trusted in Codex.
+Repository `.hunk/config.toml` may set these too, so they are treated as
+coming from the code under review:
+
+- Anything that reaches a command line is validated. `model` and `provider`
+  must be plain tokens, and the harness binary (`claude`, `codex`, or `pi`) is
+  looked up only in the absolute directories on PATH, never taken from config
+  or from the repository.
+- The harness runs inside the reviewed repository, so it ignores that
+  repository's own agent config: `claude` loads only your user settings (no
+  project hooks, settings, or `.mcp.json`), `pi` skips everything under
+  `.pi/`, and `codex` applies project config only to projects you have
+  trusted in Codex.
+- A repository can still turn on `auto_generate` or pick a pricier `model`,
+  which spends your tokens each time you open it. The caps on `max_turns`,
+  `timeout_seconds`, and `max_prompt_chars` bound what one run can cost.
+- With `tools = "read"` the agent can read any file your user can, not only
+  the repository. A diff written to steer the model could get it to quote a
+  local file into the guide. The guide stays on your machine, but that file's
+  contents reach the model provider, so use `tools = "none"` for diffs you
+  don't trust.
 
 ## Load a saved guide
 
